@@ -11,11 +11,9 @@ void liberar_memoria(TTemperaturas *temperaturas);
 
 int main() {
     int opcao;
-    int qtde_dias = 0;
-    TTemperaturas temperaturas;
+    TTemperaturas temperaturas = {0}; // Inicializa todos os campos com 0 ou NULL
+    int qtde_dias = 0, qtde_medidas = 0;
 
-    int qtde_medidas = 0;
-    
     do {
         printf("\nMenu:\n");
         printf("1 - Reset\n");
@@ -27,16 +25,14 @@ int main() {
 
         switch (opcao) {
             case 1:
-            reset(&temperaturas.qtde_dias, &temperaturas.qtde_medidas, &temperaturas);
-                printf("%d", temperaturas.qtde_dias);
-                printf("%d", temperaturas.qtde_medidas);
+                reset(&qtde_dias, &qtde_medidas, &temperaturas);
                 break;
             case 2:
-                inserir(&temperaturas.medidas, &temperaturas.qtde_dias, &temperaturas.qtde_medidas, &temperaturas);
-                exibir(&temperaturas.medidas, &temperaturas.qtde_medidas, &temperaturas);
+                inserir(&temperaturas.medidas, &qtde_dias, &qtde_medidas, &temperaturas);
+                exibir(&temperaturas.medidas, &qtde_medidas, &temperaturas);
                 break;
             case 3:
-                estatistica(&temperaturas.medidas, &temperaturas.qtde_medidas, &temperaturas);;
+                estatistica(&temperaturas.medidas, &qtde_medidas, &temperaturas);
                 break;
             case 4:
                 printf("Saindo do programa...\n");
@@ -51,46 +47,53 @@ int main() {
 }
 
 void reset(int *qtde_dias, int *qtde_medidas, TTemperaturas *temperaturas) {
-    printf("\nColoque quantos dias:");
-    scanf("%d", & temperaturas->qtde_dias);
+    liberar_memoria(temperaturas);
 
-    (*temperaturas).medidas = malloc((*temperaturas).qtde_dias* sizeof(TMedidas));
-    (*temperaturas).qtde_medidas = 0;
-    
+    printf("\nColoque quantos dias: ");
+    scanf("%d", qtde_dias);
+
+    temperaturas->medidas = malloc((*qtde_dias) * sizeof(TMedidas));
     if (temperaturas->medidas == NULL) {
         printf("Erro: não foi possível alocar memória.\n");
-    }   
+        exit(1);
+    }
+    *qtde_medidas = 0;
 }
 
 void inserir(TMedidas **medidas, int *qtde_dias, int *qtde_medidas, TTemperaturas *temperaturas) {
-
-    if (*qtde_medidas == *qtde_dias){
-        (*qtde_dias)++;
-        *medidas = realloc(*medidas, (*qtde_dias) * sizeof(TMedidas));
-
+    if (*qtde_medidas >= *qtde_dias) {
+        printf("Não é possível adicionar mais medidas. Limite alcançado.\n");
+        return;
     }
-    printf("\nColoque nome da cidade e temperatura:");
-    scanf(" %19[^\n]",(*medidas)[*qtde_medidas].cidade);   
 
-    (*medidas)[*qtde_medidas].temperatura = malloc((*qtde_dias) * sizeof(float));
-        for (int j = 0; j < *qtde_dias; j++) {
-            printf("Temperatura do dia %d: ", j + 1);
-            scanf("%f", &(*medidas)[*qtde_medidas].temperatura[j]);
-        }  
+    printf("\nColoque o nome da cidade: ");
+    scanf(" %19[^\n]", (*medidas)[*qtde_medidas].cidade);
 
-    
+    (*medidas)[*qtde_medidas].temperatura = malloc(*qtde_dias * sizeof(float));
+    if ((*medidas)[*qtde_medidas].temperatura == NULL) {
+        printf("Erro: não foi possível alocar memória.\n");
+        exit(1);
+    }
+
+    for (int j = 0; j < *qtde_dias; j++) {
+        printf("Temperatura do dia %d: ", j + 1);
+        scanf("%f", &(*medidas)[*qtde_medidas].temperatura[j]);
+    }
+
     (*qtde_medidas)++;
 }
 
 void estatistica(TMedidas **medidas, int *qtde_medidas, TTemperaturas *temperaturas) {
+    if (*qtde_medidas == 0) {
+        printf("Nenhuma medida registrada.\n");
+        return;
+    }
+
     float soma = 0;
     float menorT = (*medidas)[0].temperatura[0];
     float maiorT = (*medidas)[0].temperatura[0];
-    char *menorC = (*medidas)[0].cidade;  // Use ponteiros para evitar cópias
+    char *menorC = (*medidas)[0].cidade;
     char *maiorC = (*medidas)[0].cidade;
-
-    printf("\nOpção Estatística escolhida. Calculando estatísticas...\n");
-    printf("\nCidades e suas temperaturas:\n");
 
     for (int i = 0; i < *qtde_medidas; i++) {
         for (int j = 0; j < temperaturas->qtde_dias; j++) {
@@ -99,17 +102,17 @@ void estatistica(TMedidas **medidas, int *qtde_medidas, TTemperaturas *temperatu
 
             if (temp_atual < menorT) {
                 menorT = temp_atual;
-                menorC = (*medidas)[i].cidade;  // Atualiza o ponteiro
+                menorC = (*medidas)[i].cidade;
             }
             if (temp_atual > maiorT) {
                 maiorT = temp_atual;
-                maiorC = (*medidas)[i].cidade;  // Atualiza o ponteiro
+                maiorC = (*medidas)[i].cidade;
             }
         }
     }
 
     float media = soma / ((*qtde_medidas) * temperaturas->qtde_dias);
-    printf("Média das temperaturas: %.2f\n", media);
+    printf("\nMédia das temperaturas: %.2f\n", media);
     printf("Menor temperatura: %.2f na cidade %s\n", menorT, menorC);
     printf("Maior temperatura: %.2f na cidade %s\n", maiorT, maiorC);
 }
@@ -123,18 +126,16 @@ void exibir(TMedidas **medidas, int *qtde_medidas, TTemperaturas *temperaturas) 
             printf("  Dia %d: %.2f\n", j + 1, (*medidas)[i].temperatura[j]);
         }
     }
-}  
+}
 
 void liberar_memoria(TTemperaturas *temperaturas) {
     if (temperaturas->medidas != NULL) {
-        // Libera cada vetor de temperaturas alocado para as cidades
         for (int i = 0; i < temperaturas->qtde_medidas; i++) {
             free(temperaturas->medidas[i].temperatura);
         }
-        // Libera o vetor principal de medidas
         free(temperaturas->medidas);
     }
-    temperaturas->medidas = NULL; // Evita uso de ponteiro inválido
+    temperaturas->medidas = NULL;
     temperaturas->qtde_medidas = 0;
     temperaturas->qtde_dias = 0;
 }
