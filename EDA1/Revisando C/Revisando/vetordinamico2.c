@@ -54,6 +54,8 @@ void inclui_ordenado(float **pvalores, float pv, int *pcapacidade, int *ptamanho
     (*ptamanho)++;
 }
 
+void
+
 
 float* carregarNumeros( char *nomeArquivo, int *ptamanho, int *pcapacidade){
    FILE *arquivo = fopen(nomeArquivo, "r");
